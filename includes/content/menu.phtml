@@ -1,0 +1,109 @@
+<?php 
+	// echo $this->name 
+	// <?= $this->name ? >	
+?>
+<div id="menuContainer"></div>
+
+<script type="text/javascript">
+	var menu = {
+		"&File":{
+			"_onclick":"showSubmenu($(this).next());",
+			"children":{
+				"Open":{},
+				"Save on Server":{},
+				"Save Locally":{},
+				"Close":{},
+				"_line":{},
+				"Exit":{}
+			}
+		},
+		"Edit":{},
+		"System":{},
+		"Actions":{},
+		"&Help":{
+			"_onclick":"showSubmenu($(this).next());",
+			"children":{
+				"About":{
+					"_onclick":"show('includes/content/help.phtml');"
+				}
+			}
+		}
+	}
+	
+	var menuHTML = '<ul id="menu">';
+	menuHTML += buildMenu(menu);
+	menuHTML += '</ul>';
+	$("#menuContainer").html(menuHTML);
+	
+	function buildMenu(menuObj){
+		var menuOut = '';
+		for(var i in menuObj){
+			if(i == "_line"){
+				menuOut += '<div class="hr"></div>';
+			}else{
+				menuOut += '<li'
+					+(typeof menuObj[i]._onclick != "undefined"?' onclick="'+menuObj[i]._onclick+'"':"")
+					+'>'+i+'</li>';
+			}
+			if(typeof menuObj[i].children != "undefined"){
+				menuOut += '<ul id="'+(i.replace(/&/g,"").toLowerCase())+'" class="submenu">';
+				menuOut += buildMenu(menuObj[i].children);
+				menuOut += "</ul>";
+			}
+		}
+		return menuOut;
+	}
+
+	//replace ampersands with underlined characters.
+	window.menuKeyCodes = {};
+	$("#menu").children("li").each(function(){
+		var text = this.innerText;
+		var ampPos = text.indexOf("&");
+		
+		if(ampPos > -1 && text.substring(ampPos,5) != "&amp;"){
+			var bindingKey = text.substring(ampPos+1,2);
+			var newStr = text.substring(0,ampPos);
+			newStr += '<span style="text-decoration:underline;">';
+			newStr += bindingKey;
+			newStr += '</span>'
+			newStr += text.substring(ampPos+2);
+			$(this).html(newStr);
+			//console.log(bindingKey.charCodeAt(0));
+			window.menuKeyCodes[bindingKey.charCodeAt(0)-64] = {
+				"key":bindingKey,
+				"obj":this
+			};
+		}
+	});
+
+
+	$(window).keypress(function(event){
+		if(event.ctrlKey && event.shiftKey && typeof window.menuKeyCodes[event.keyCode] != "undefined"){
+			//console.log("hello");
+			$(window.menuKeyCodes[event.keyCode].obj).click();
+			event.stopPropagation();
+		}
+	});
+	
+	function show(file){
+		$.ajax({
+			url:file,
+			dataType: "html",
+			success: function(data){
+				$(data).dialog({
+					title:"About",
+					modal:true,
+					autoopen:true,
+					closeOnEscape:true,
+					draggable:false,
+					resizable:false
+				});
+				//$("body").append(data);
+				console.log(data);
+			},
+			error: function(xhr){
+				console.log(xhr);
+			}
+		});
+	}
+</script>
